@@ -8,31 +8,38 @@ contract VotingSystem is Ownable, ReentrancyGuard {
     struct Candidate {
         uint256 id;
         string name;
+        string imageUrl;
         uint256 voteCount;
         bool exists;
     }
-    
+
     struct Voter {
+        string rwandanId;
+        string fullName;
+        string gender;
         bool isRegistered;
         bool hasVoted;
         uint256 votedCandidateId;
     }
-    
-    mapping(address => Voter) public voters;
+
+    mapping(string => Voter) public votersByID;
+    mapping(address => string) public addressToID;
     mapping(uint256 => Candidate) public candidates;
+    string[] public registeredIDs;
     
     uint256 public candidatesCount;
     uint256 public totalVotes;
     bool public votingActive;
-    
-    event VoterRegistered(address indexed voter);
+
+    event VoterRegistered(string indexed rwandanId, string fullName);
     event CandidateAdded(uint256 indexed candidateId, string name);
-    event VoteCast(address indexed voter, uint256 indexed candidateId);
+    event VoteCast(string indexed rwandanId, uint256 indexed candidateId);
     event VotingStarted();
     event VotingEnded();
-    
+
     modifier onlyRegisteredVoter() {
-        require(voters[msg.sender].isRegistered, "You are not registered to vote");
+        string memory voterID = addressToID[msg.sender];
+        require(bytes(voterID).length > 0 && votersByID[voterID].isRegistered, "You are not registered to vote");
         _;
     }
     
@@ -42,41 +49,71 @@ contract VotingSystem is Ownable, ReentrancyGuard {
     }
     
     modifier hasNotVoted() {
-        require(!voters[msg.sender].hasVoted, "You have already voted");
+        string memory voterID = addressToID[msg.sender];
+        require(!votersByID[voterID].hasVoted, "You have already voted");
         _;
     }
-    
+
     constructor() {
         votingActive = false;
+        // Initialize the three candidates for Rwanda election
+        _addCandidate("KAGAME PAUL", "");
+        _addCandidate("ANDY ISHIMWE", "");
+        _addCandidate("ISHIMWE GHISLAIN", "");
     }
     
-    // Register a voter (only owner can register voters)
-    function registerVoter(address _voter) external onlyOwner {
-        require(!voters[_voter].isRegistered, "Voter is already registered");
-        
-        voters[_voter] = Voter({
+    // Register a voter with Rwandan ID (only owner can register voters)
+    function registerVoter(
+        string memory _rwandanId,
+        string memory _fullName,
+        string memory _gender,
+        address _voterAddress
+    ) external onlyOwner {
+        require(bytes(_rwandanId).length == 16, "Rwandan ID must be 16 digits");
+        require(bytes(_fullName).length > 0, "Full name cannot be empty");
+        require(
+            keccak256(abi.encodePacked(_gender)) == keccak256(abi.encodePacked("Male")) ||
+            keccak256(abi.encodePacked(_gender)) == keccak256(abi.encodePacked("Female")),
+            "Gender must be Male or Female"
+        );
+        require(!votersByID[_rwandanId].isRegistered, "Voter with this ID is already registered");
+        require(bytes(addressToID[_voterAddress]).length == 0, "Address already linked to another ID");
+
+        votersByID[_rwandanId] = Voter({
+            rwandanId: _rwandanId,
+            fullName: _fullName,
+            gender: _gender,
             isRegistered: true,
             hasVoted: false,
             votedCandidateId: 0
         });
-        
-        emit VoterRegistered(_voter);
+
+        addressToID[_voterAddress] = _rwandanId;
+        registeredIDs.push(_rwandanId);
+
+        emit VoterRegistered(_rwandanId, _fullName);
     }
     
-    // Add a candidate (only owner can add candidates)
-    function addCandidate(string memory _name) external onlyOwner {
-        require(bytes(_name).length > 0, "Candidate name cannot be empty");
-        require(!votingActive, "Cannot add candidates during active voting");
-        
+    // Internal function to add a candidate
+    function _addCandidate(string memory _name, string memory _imageUrl) internal {
         candidatesCount++;
         candidates[candidatesCount] = Candidate({
             id: candidatesCount,
             name: _name,
+            imageUrl: _imageUrl,
             voteCount: 0,
             exists: true
         });
-        
+
         emit CandidateAdded(candidatesCount, _name);
+    }
+
+    // Update candidate image URL (only owner)
+    function updateCandidateImage(uint256 _candidateId, string memory _imageUrl) external onlyOwner {
+        require(_candidateId > 0 && _candidateId <= candidatesCount, "Invalid candidate ID");
+        require(candidates[_candidateId].exists, "Candidate does not exist");
+
+        candidates[_candidateId].imageUrl = _imageUrl;
     }
     
     // Start voting (only owner)
@@ -97,51 +134,56 @@ contract VotingSystem is Ownable, ReentrancyGuard {
     }
     
     // Cast a vote
-    function vote(uint256 _candidateId) external 
-        onlyRegisteredVoter 
-        onlyDuringVoting 
-        hasNotVoted 
-        nonReentrant 
+    function vote(uint256 _candidateId) external
+        onlyRegisteredVoter
+        onlyDuringVoting
+        hasNotVoted
+        nonReentrant
     {
         require(_candidateId > 0 && _candidateId <= candidatesCount, "Invalid candidate ID");
         require(candidates[_candidateId].exists, "Candidate does not exist");
-        
-        voters[msg.sender].hasVoted = true;
-        voters[msg.sender].votedCandidateId = _candidateId;
-        
+
+        string memory voterID = addressToID[msg.sender];
+        votersByID[voterID].hasVoted = true;
+        votersByID[voterID].votedCandidateId = _candidateId;
+
         candidates[_candidateId].voteCount++;
         totalVotes++;
-        
-        emit VoteCast(msg.sender, _candidateId);
+
+        emit VoteCast(voterID, _candidateId);
     }
     
     // Get candidate details
     function getCandidate(uint256 _candidateId) external view returns (
         uint256 id,
         string memory name,
+        string memory imageUrl,
         uint256 voteCount
     ) {
         require(_candidateId > 0 && _candidateId <= candidatesCount, "Invalid candidate ID");
         require(candidates[_candidateId].exists, "Candidate does not exist");
-        
+
         Candidate memory candidate = candidates[_candidateId];
-        return (candidate.id, candidate.name, candidate.voteCount);
+        return (candidate.id, candidate.name, candidate.imageUrl, candidate.voteCount);
     }
     
     // Get all candidates
     function getAllCandidates() external view returns (
         uint256[] memory ids,
         string[] memory names,
+        string[] memory imageUrls,
         uint256[] memory voteCounts
     ) {
         ids = new uint256[](candidatesCount);
         names = new string[](candidatesCount);
+        imageUrls = new string[](candidatesCount);
         voteCounts = new uint256[](candidatesCount);
-        
+
         for (uint256 i = 1; i <= candidatesCount; i++) {
             if (candidates[i].exists) {
                 ids[i-1] = candidates[i].id;
                 names[i-1] = candidates[i].name;
+                imageUrls[i-1] = candidates[i].imageUrl;
                 voteCounts[i-1] = candidates[i].voteCount;
             }
         }
@@ -175,14 +217,73 @@ contract VotingSystem is Ownable, ReentrancyGuard {
         );
     }
     
-    // Check if voter is registered
-    function isVoterRegistered(address _voter) external view returns (bool) {
-        return voters[_voter].isRegistered;
+    // Check if voter is registered by ID
+    function isVoterRegisteredByID(string memory _rwandanId) external view returns (bool) {
+        return votersByID[_rwandanId].isRegistered;
     }
-    
-    // Check if voter has voted
-    function hasVoterVoted(address _voter) external view returns (bool) {
-        return voters[_voter].hasVoted;
+
+    // Check if voter has voted by ID
+    function hasVoterVotedByID(string memory _rwandanId) external view returns (bool) {
+        return votersByID[_rwandanId].hasVoted;
+    }
+
+    // Get voter details by ID
+    function getVoterByID(string memory _rwandanId) external view returns (
+        string memory rwandanId,
+        string memory fullName,
+        string memory gender,
+        bool isRegistered,
+        bool hasVoted,
+        uint256 votedCandidateId
+    ) {
+        Voter memory voter = votersByID[_rwandanId];
+        return (
+            voter.rwandanId,
+            voter.fullName,
+            voter.gender,
+            voter.isRegistered,
+            voter.hasVoted,
+            voter.votedCandidateId
+        );
+    }
+
+    // Get all registered voter IDs
+    function getAllRegisteredIDs() external view returns (string[] memory) {
+        return registeredIDs;
+    }
+
+    // Update voter information (only owner)
+    function updateVoter(
+        string memory _rwandanId,
+        string memory _fullName,
+        string memory _gender
+    ) external onlyOwner {
+        require(votersByID[_rwandanId].isRegistered, "Voter not found");
+        require(bytes(_fullName).length > 0, "Full name cannot be empty");
+        require(
+            keccak256(abi.encodePacked(_gender)) == keccak256(abi.encodePacked("Male")) ||
+            keccak256(abi.encodePacked(_gender)) == keccak256(abi.encodePacked("Female")),
+            "Gender must be Male or Female"
+        );
+
+        votersByID[_rwandanId].fullName = _fullName;
+        votersByID[_rwandanId].gender = _gender;
+    }
+
+    // Remove voter (only owner)
+    function removeVoter(string memory _rwandanId) external onlyOwner {
+        require(votersByID[_rwandanId].isRegistered, "Voter not found");
+
+        delete votersByID[_rwandanId];
+
+        // Remove from registeredIDs array
+        for (uint256 i = 0; i < registeredIDs.length; i++) {
+            if (keccak256(abi.encodePacked(registeredIDs[i])) == keccak256(abi.encodePacked(_rwandanId))) {
+                registeredIDs[i] = registeredIDs[registeredIDs.length - 1];
+                registeredIDs.pop();
+                break;
+            }
+        }
     }
     
     // Get voting status
