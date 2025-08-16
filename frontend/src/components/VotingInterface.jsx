@@ -22,23 +22,42 @@ const VotingInterface = ({ votingStatus, candidates, onVoteSubmitted }) => {
   const [rulesAccepted, setRulesAccepted] = useState(false);
   const [photoTaken, setPhotoTaken] = useState(false);
   const [photoData, setPhotoData] = useState(null);
+  const [voterInfo, setVoterInfo] = useState(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [cameraActive, setCameraActive] = useState(false);
+
+  // Mock registered voters (in real app, this would come from admin/blockchain)
+  const registeredVoters = [
+    { rwandanId: '1234567890123456', fullName: 'John Doe' },
+    { rwandanId: '2345678901234567', fullName: 'Jane Smith' }
+  ];
 
   const validateRwandanId = (id) => {
     return /^\d{16}$/.test(id);
   };
 
+  const checkVoterRegistration = (id) => {
+    return registeredVoters.find(voter => voter.rwandanId === id);
+  };
+
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'user',
+          width: { ideal: 640 },
+          height: { ideal: 480 }
+        } 
+      });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         setCameraActive(true);
       }
     } catch (error) {
       toast.error('Camera access denied or not available');
+      // Simulate camera for demo
+      setCameraActive(true);
     }
   };
 
@@ -81,9 +100,18 @@ const VotingInterface = ({ votingStatus, candidates, onVoteSubmitted }) => {
 
   const handleIdSubmit = () => {
     if (!validateRwandanId(rwandanId)) {
-      toast.error(t('validation.idInvalid'));
+      toast.error('Indangamuntu si nziza. Injiza imibare 16.');
       return;
     }
+
+    // Check if voter is registered
+    const registeredVoter = checkVoterRegistration(rwandanId);
+    if (!registeredVoter) {
+      toast.error('Ntibyemewe gutora. Indangamuntu yawe ntiyanditswe na buyobozi.');
+      return;
+    }
+
+    setVoterInfo(registeredVoter);
     setCurrentStep('camera');
   };
 
@@ -104,11 +132,11 @@ const VotingInterface = ({ votingStatus, candidates, onVoteSubmitted }) => {
     setIsVoting(true);
     try {
       // Simulate vote submission
-      toast.success(t('success.voteSubmitted'));
+      toast.success('Itora ryawe ryoherejwe neza!');
       onVoteSubmitted?.();
       setCurrentStep('confirmation');
     } catch (error) {
-      toast.error(t('error.generalError'));
+      toast.error('Ntibyashoboye gutora. Ongera ugerageze.');
     } finally {
       setIsVoting(false);
     }
@@ -119,10 +147,10 @@ const VotingInterface = ({ votingStatus, candidates, onVoteSubmitted }) => {
       <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 text-center">
         <Clock className="mx-auto h-16 w-16 text-gray-400 mb-6" />
         <h3 className="text-2xl font-bold text-gray-900 mb-4">
-          {t('votingNotActive')}
+          Amatora ntabwo arakora
         </h3>
         <p className="text-gray-600 text-lg">
-          Amatora ntabwo arakora. Tegereza ubuyobozi butangire amatora.
+          Tegereza ubuyobozi butangire amatora.
         </p>
       </div>
     );
@@ -142,26 +170,40 @@ const VotingInterface = ({ votingStatus, candidates, onVoteSubmitted }) => {
     );
   }
 
-  // Step 1: Rules and Regulations
+  // Step 1: Rules and Regulations (Amabwiriza)
   if (currentStep === 'rules') {
     return (
       <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
         <div className="text-center mb-8">
           <Shield className="mx-auto h-16 w-16 text-blue-600 mb-4" />
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">{t('rulesTitle')}</h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Amategeko n'Amabwiriza y'Amatora</h2>
           <p className="text-gray-600">Soma amategeko mbere yo gutora</p>
         </div>
 
         <div className="space-y-6 mb-8">
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-            <h3 className="text-xl font-semibold text-blue-900 mb-4">{t('votingRules')}</h3>
+            <h3 className="text-xl font-semibold text-blue-900 mb-4">Amategeko y'Amatora</h3>
             <ul className="space-y-3">
-              {t('rules').map((rule, index) => (
-                <li key={index} className="flex items-start space-x-3">
-                  <CheckCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-blue-800">{rule}</span>
-                </li>
-              ))}
+              <li className="flex items-start space-x-3">
+                <CheckCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <span className="text-blue-800">Ugomba kuba ufite indangamuntu y'u Rwanda ifatika</span>
+              </li>
+              <li className="flex items-start space-x-3">
+                <CheckCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <span className="text-blue-800">Buri muntu ashobora gutora rimwe gusa</span>
+              </li>
+              <li className="flex items-start space-x-3">
+                <CheckCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <span className="text-blue-800">Hitamo umukandida umwe gusa</span>
+              </li>
+              <li className="flex items-start space-x-3">
+                <CheckCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <span className="text-blue-800">Amatora yawe ni amabanga kandi aracungwa</span>
+              </li>
+              <li className="flex items-start space-x-3">
+                <CheckCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <span className="text-blue-800">Ntushobora guhindura itora ryawe nyuma y'uko uryemeje</span>
+              </li>
             </ul>
           </div>
 
@@ -174,7 +216,7 @@ const VotingInterface = ({ votingStatus, candidates, onVoteSubmitted }) => {
               className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
             />
             <label htmlFor="rulesAccepted" className="text-yellow-800 font-medium">
-              {t('agreeToRules')}
+              Nemeye amategeko y'amatora
             </label>
           </div>
         </div>
@@ -189,7 +231,7 @@ const VotingInterface = ({ votingStatus, candidates, onVoteSubmitted }) => {
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
           >
-            {t('proceedToVote')} <ArrowRight className="inline h-5 w-5 ml-2" />
+            Komeza utore <ArrowRight className="inline h-5 w-5 ml-2" />
           </button>
         </div>
       </div>
@@ -202,13 +244,13 @@ const VotingInterface = ({ votingStatus, candidates, onVoteSubmitted }) => {
       <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
         <div className="text-center mb-8">
           <User className="mx-auto h-16 w-16 text-green-600 mb-4" />
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">{t('enterYourId')}</h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Injiza Indangamuntu Yawe</h2>
           <p className="text-gray-600">Injiza indangamuntu yawe y'u Rwanda</p>
         </div>
-
+        
         <div className="max-w-md mx-auto">
           <label className="block text-lg font-medium text-gray-700 mb-4">
-            {t('rwandanId')}
+            Indangamuntu y'u Rwanda
           </label>
           <input
             type="text"
@@ -227,7 +269,7 @@ const VotingInterface = ({ votingStatus, candidates, onVoteSubmitted }) => {
               onClick={() => setCurrentStep('rules')}
               className="flex-1 bg-gray-500 text-white py-3 rounded-xl font-semibold hover:bg-gray-600 transition-colors flex items-center justify-center"
             >
-              <ArrowLeft className="h-5 w-5 mr-2" /> {t('back')}
+              <ArrowLeft className="h-5 w-5 mr-2" /> Inyuma
             </button>
             <button
               onClick={handleIdSubmit}
@@ -238,7 +280,7 @@ const VotingInterface = ({ votingStatus, candidates, onVoteSubmitted }) => {
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              {t('next')} <ArrowRight className="h-5 w-5 ml-2" />
+              Komeza <ArrowRight className="h-5 w-5 ml-2" />
             </button>
           </div>
         </div>
@@ -252,10 +294,10 @@ const VotingInterface = ({ votingStatus, candidates, onVoteSubmitted }) => {
       <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
         <div className="text-center mb-8">
           <Camera className="mx-auto h-16 w-16 text-purple-600 mb-4" />
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">{t('verifyIdentity')}</h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Kugenzura Umwirondoro</h2>
           <p className="text-gray-600">Fata ifoto yawe kugirango tugenzure umwirondoro</p>
         </div>
-
+        
         <div className="max-w-md mx-auto">
           {!photoTaken ? (
             <div className="space-y-6">
@@ -287,7 +329,7 @@ const VotingInterface = ({ votingStatus, candidates, onVoteSubmitted }) => {
                     onClick={takePhoto}
                     className="flex-1 bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors flex items-center justify-center"
                   >
-                    <Camera className="h-5 w-5 mr-2" /> {t('takePhoto')}
+                    <Camera className="h-5 w-5 mr-2" /> Fata Ifoto
                   </button>
                 )}
               </div>
@@ -297,34 +339,34 @@ const VotingInterface = ({ votingStatus, candidates, onVoteSubmitted }) => {
               <div className="relative bg-gray-100 rounded-xl overflow-hidden" style={{ aspectRatio: '4/3' }}>
                 <img src={photoData} alt="Captured" className="w-full h-full object-cover" />
               </div>
-
+              
               <div className="flex space-x-4">
                 <button
                   onClick={retakePhoto}
                   className="flex-1 bg-gray-500 text-white py-3 rounded-xl font-semibold hover:bg-gray-600 transition-colors flex items-center justify-center"
                 >
-                  <RotateCcw className="h-5 w-5 mr-2" /> {t('retakePhoto')}
+                  <RotateCcw className="h-5 w-5 mr-2" /> Ongera Ufate Ifoto
                 </button>
                 <button
                   onClick={handleCameraConfirm}
                   className="flex-1 bg-gradient-to-r from-blue-600 to-green-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center"
                 >
-                  {t('confirmIdentity')} <ArrowRight className="h-5 w-5 ml-2" />
+                  Emeza Umwirondoro <ArrowRight className="h-5 w-5 ml-2" />
                 </button>
               </div>
             </div>
           )}
+        </div>
 
-          <canvas ref={canvasRef} style={{ display: 'none' }} />
+        <canvas ref={canvasRef} style={{ display: 'none' }} />
 
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => setCurrentStep('id-input')}
-              className="text-gray-500 hover:text-gray-700 transition-colors flex items-center justify-center mx-auto"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" /> {t('back')}
-            </button>
-          </div>
+        <div className="mt-6 text-center">
+          <button
+            onClick={() => setCurrentStep('id-input')}
+            className="text-gray-500 hover:text-gray-700 transition-colors flex items-center justify-center mx-auto"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" /> Inyuma
+          </button>
         </div>
       </div>
     );
@@ -336,10 +378,10 @@ const VotingInterface = ({ votingStatus, candidates, onVoteSubmitted }) => {
       <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
         <div className="text-center mb-8">
           <Vote className="mx-auto h-16 w-16 text-blue-600 mb-4" />
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">{t('selectCandidate')}</h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Hitamo Umukandida</h2>
           <p className="text-gray-600">Hitamo umukandida ushaka gutora</p>
         </div>
-
+        
         <div className="grid md:grid-cols-3 gap-6 mb-8">
           {candidates.map((candidate) => (
             <div
@@ -376,13 +418,13 @@ const VotingInterface = ({ votingStatus, candidates, onVoteSubmitted }) => {
             </div>
           ))}
         </div>
-
+        
         <div className="flex space-x-4">
           <button
             onClick={() => setCurrentStep('camera')}
             className="flex-1 bg-gray-500 text-white py-3 rounded-xl font-semibold hover:bg-gray-600 transition-colors flex items-center justify-center"
           >
-            <ArrowLeft className="h-5 w-5 mr-2" /> {t('back')}
+            <ArrowLeft className="h-5 w-5 mr-2" /> Inyuma
           </button>
           <button
             onClick={submitVote}
@@ -393,7 +435,7 @@ const VotingInterface = ({ votingStatus, candidates, onVoteSubmitted }) => {
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
           >
-            {isVoting ? t('loading') : `${t('voteFor')} ${selectedCandidate?.name || ''}`}
+            {isVoting ? 'Birakora...' : `Tora ${selectedCandidate?.name || ''}`}
             {!isVoting && <ArrowRight className="h-5 w-5 ml-2" />}
           </button>
         </div>

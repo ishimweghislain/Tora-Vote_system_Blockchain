@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
-import { Vote, Shield, BarChart3, Users, Lock, Eye, CheckCircle } from 'lucide-react';
+import { Vote, Shield, BarChart3, Users, Lock, Eye, CheckCircle, Trophy, Clock } from 'lucide-react';
 import AdminPanel from './components/AdminPanel';
 import VotingInterface from './components/VotingInterface';
 import ResultsDisplay from './components/ResultsDisplay';
+import WinnerAnnouncement from './components/WinnerAnnouncement';
 import { t } from './utils/translations';
 
 function App() {
@@ -12,38 +13,54 @@ function App() {
   const [candidates, setCandidates] = useState([]);
   const [activeTab, setActiveTab] = useState('home');
   const [loading, setLoading] = useState(false);
+  const [showDeadlinePopup, setShowDeadlinePopup] = useState(false);
 
-  // Initialize with dummy data for the three candidates
+  // Initialize with real candidate data (NO dummy votes - all set to 0)
   useEffect(() => {
     setCandidates([
       {
         id: 1,
         name: 'KAGAME PAUL',
         imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-        voteCount: Math.floor(Math.random() * 100) + 50
+        voteCount: 0 // NO dummy data - starts at 0
       },
       {
         id: 2,
         name: 'ANDY ISHIMWE',
         imageUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-        voteCount: Math.floor(Math.random() * 80) + 30
+        voteCount: 0 // NO dummy data - starts at 0
       },
       {
         id: 3,
         name: 'ISHIMWE GHISLAIN',
         imageUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
-        voteCount: Math.floor(Math.random() * 70) + 25
+        voteCount: 0 // NO dummy data - starts at 0
       }
     ]);
-    setVotingStatus({ isActive: true, totalCandidates: 3, totalVotesCast: 0 });
+    
+    // Set initial voting status with deadline 17/08/2025 15:00
+    setVotingStatus({ 
+      isActive: true, 
+      totalCandidates: 3, 
+      totalVotesCast: 0,
+      deadline: new Date('2025-08-17T15:00:00')
+    });
+
+    // Show deadline popup every 30 seconds
+    const deadlineInterval = setInterval(() => {
+      setShowDeadlinePopup(true);
+      setTimeout(() => setShowDeadlinePopup(false), 5000); // Hide after 5 seconds
+    }, 30000);
+
+    return () => clearInterval(deadlineInterval);
   }, []);
 
   const handleStatusChange = () => {
-    // Refresh voting data
+    // Refresh data
   };
 
   const handleVoteSubmitted = () => {
-    // Refresh voting data after vote
+    // Refresh data after vote
   };
 
   const tabs = [
@@ -51,12 +68,28 @@ function App() {
     { id: 'about', label: t('about'), icon: Users },
     { id: 'admin', label: t('admin'), icon: Shield },
     { id: 'vote', label: t('vote'), icon: Vote },
-    { id: 'results', label: t('results'), icon: BarChart3 }
+    { id: 'results', label: t('results'), icon: BarChart3 },
+    { id: 'winner', label: t('winner'), icon: Trophy }
   ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
       <Toaster position="top-right" />
+
+      {/* Animated Deadline Popup */}
+      {showDeadlinePopup && (
+        <div className="fixed top-4 right-4 z-50 animate-bounce">
+          <div className="bg-yellow-500 text-white px-6 py-4 rounded-lg shadow-lg border-2 border-yellow-600">
+            <div className="flex items-center space-x-3">
+              <Clock className="h-6 w-6 animate-pulse" />
+              <div>
+                <p className="font-bold">Umunsi wa nyuma wo gutora!</p>
+                <p className="text-sm">17/08/2025 saa kenda (15:00)</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <header className="bg-white shadow-lg border-b-4 border-blue-600">
@@ -132,6 +165,17 @@ function App() {
                   <p className="text-xl text-gray-600 mb-8 leading-relaxed">
                     {t('welcomeSubtitle')}
                   </p>
+                  
+                  {/* Animated Deadline Alert */}
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-8 max-w-2xl mx-auto animate-pulse">
+                    <div className="flex items-center justify-center space-x-2 text-yellow-800">
+                      <Clock className="h-5 w-5 animate-bounce" />
+                      <span className="font-semibold">
+                        Umunsi wa nyuma wo gutora: 17/08/2025 saa kenda (15:00)
+                      </span>
+                    </div>
+                  </div>
+                  
                   <div className="flex flex-wrap justify-center gap-4">
                     <button
                       onClick={() => setActiveTab('vote')}
@@ -205,6 +249,13 @@ function App() {
               candidates={candidates}
             />
           )}
+
+          {activeTab === 'winner' && (
+            <WinnerAnnouncement
+              candidates={candidates}
+              votingStatus={votingStatus}
+            />
+          )}
         </div>
       </main>
 
@@ -218,7 +269,7 @@ function App() {
             </div>
             <p className="text-blue-100 mb-2">{t('appDescription')}</p>
             <div className="flex justify-center space-x-6 text-sm text-blue-100">
-              <span>🔒 {t('aboutFeatures.security')}</span>
+              <span>�� {t('aboutFeatures.security')}</span>
               <span>👁️ {t('aboutFeatures.transparency')}</span>
               <span>✅ {t('aboutFeatures.immutable')}</span>
             </div>

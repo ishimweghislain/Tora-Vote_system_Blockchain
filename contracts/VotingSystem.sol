@@ -17,6 +17,7 @@ contract VotingSystem is Ownable, ReentrancyGuard {
         string rwandanId;
         string fullName;
         string gender;
+        string village;
         bool isRegistered;
         bool hasVoted;
         uint256 votedCandidateId;
@@ -30,12 +31,15 @@ contract VotingSystem is Ownable, ReentrancyGuard {
     uint256 public candidatesCount;
     uint256 public totalVotes;
     bool public votingActive;
-
-    event VoterRegistered(string indexed rwandanId, string fullName);
+    uint256 public votingDeadline; // Unix timestamp for voting deadline
+    
+    // Events
+    event VoterRegistered(string indexed rwandanId, string fullName, string village);
     event CandidateAdded(uint256 indexed candidateId, string name);
     event VoteCast(string indexed rwandanId, uint256 indexed candidateId);
-    event VotingStarted();
+    event VotingStarted(uint256 deadline);
     event VotingEnded();
+    event VotingDeadlineSet(uint256 deadline);
 
     modifier onlyRegisteredVoter() {
         string memory voterID = addressToID[msg.sender];
@@ -45,6 +49,7 @@ contract VotingSystem is Ownable, ReentrancyGuard {
     
     modifier onlyDuringVoting() {
         require(votingActive, "Voting is not active");
+        require(block.timestamp < votingDeadline, "Voting deadline has passed");
         _;
     }
     
@@ -56,21 +61,24 @@ contract VotingSystem is Ownable, ReentrancyGuard {
 
     constructor() {
         votingActive = false;
+        votingDeadline = 0;
         // Initialize the three candidates for Rwanda election
         _addCandidate("KAGAME PAUL", "");
         _addCandidate("ANDY ISHIMWE", "");
         _addCandidate("ISHIMWE GHISLAIN", "");
     }
     
-    // Register a voter with Rwandan ID (only owner can register voters)
+    // Register a voter with Rwandan ID and village (only owner can register voters)
     function registerVoter(
         string memory _rwandanId,
         string memory _fullName,
         string memory _gender,
+        string memory _village,
         address _voterAddress
     ) external onlyOwner {
         require(bytes(_rwandanId).length == 16, "Rwandan ID must be 16 digits");
         require(bytes(_fullName).length > 0, "Full name cannot be empty");
+        require(bytes(_village).length > 0, "Village cannot be empty");
         require(
             keccak256(abi.encodePacked(_gender)) == keccak256(abi.encodePacked("Male")) ||
             keccak256(abi.encodePacked(_gender)) == keccak256(abi.encodePacked("Female")),
@@ -83,6 +91,7 @@ contract VotingSystem is Ownable, ReentrancyGuard {
             rwandanId: _rwandanId,
             fullName: _fullName,
             gender: _gender,
+            village: _village,
             isRegistered: true,
             hasVoted: false,
             votedCandidateId: 0
@@ -91,7 +100,7 @@ contract VotingSystem is Ownable, ReentrancyGuard {
         addressToID[_voterAddress] = _rwandanId;
         registeredIDs.push(_rwandanId);
 
-        emit VoterRegistered(_rwandanId, _fullName);
+        emit VoterRegistered(_rwandanId, _fullName, _village);
     }
     
     // Internal function to add a candidate
@@ -116,13 +125,24 @@ contract VotingSystem is Ownable, ReentrancyGuard {
         candidates[_candidateId].imageUrl = _imageUrl;
     }
     
-    // Start voting (only owner)
-    function startVoting() external onlyOwner {
+    // Start voting with deadline (only owner)
+    function startVoting(uint256 _deadline) external onlyOwner {
         require(!votingActive, "Voting is already active");
         require(candidatesCount > 0, "No candidates available");
+        require(_deadline > block.timestamp, "Deadline must be in the future");
         
         votingActive = true;
-        emit VotingStarted();
+        votingDeadline = _deadline;
+        emit VotingStarted(_deadline);
+    }
+    
+    // Set voting deadline (only owner)
+    function setVotingDeadline(uint256 _deadline) external onlyOwner {
+        require(votingActive, "Voting is not active");
+        require(_deadline > block.timestamp, "Deadline must be in the future");
+        
+        votingDeadline = _deadline;
+        emit VotingDeadlineSet(_deadline);
     }
     
     // End voting (only owner)
@@ -195,7 +215,7 @@ contract VotingSystem is Ownable, ReentrancyGuard {
         string memory winnerName,
         uint256 winnerVoteCount
     ) {
-        require(!votingActive, "Voting is still active");
+        require(!votingActive || block.timestamp >= votingDeadline, "Voting is still active");
         require(candidatesCount > 0, "No candidates available");
         
         uint256 maxVotes = 0;
@@ -217,6 +237,35 @@ contract VotingSystem is Ownable, ReentrancyGuard {
         );
     }
     
+    // Get current leader (can be called during voting)
+    function getCurrentLeader() external view returns (
+        uint256 leaderId,
+        string memory leaderName,
+        uint256 leaderVoteCount
+    ) {
+        require(candidatesCount > 0, "No candidates available");
+        
+        uint256 maxVotes = 0;
+        uint256 leadingCandidateId = 0;
+        
+        for (uint256 i = 1; i <= candidatesCount; i++) {
+            if (candidates[i].exists && candidates[i].voteCount > maxVotes) {
+                maxVotes = candidates[i].voteCount;
+                leadingCandidateId = i;
+            }
+        }
+        
+        if (leadingCandidateId == 0) {
+            return (0, "", 0);
+        }
+        
+        return (
+            leadingCandidateId,
+            candidates[leadingCandidateId].name,
+            candidates[leadingCandidateId].voteCount
+        );
+    }
+    
     // Check if voter is registered by ID
     function isVoterRegisteredByID(string memory _rwandanId) external view returns (bool) {
         return votersByID[_rwandanId].isRegistered;
@@ -232,6 +281,7 @@ contract VotingSystem is Ownable, ReentrancyGuard {
         string memory rwandanId,
         string memory fullName,
         string memory gender,
+        string memory village,
         bool isRegistered,
         bool hasVoted,
         uint256 votedCandidateId
@@ -241,6 +291,7 @@ contract VotingSystem is Ownable, ReentrancyGuard {
             voter.rwandanId,
             voter.fullName,
             voter.gender,
+            voter.village,
             voter.isRegistered,
             voter.hasVoted,
             voter.votedCandidateId
@@ -256,10 +307,12 @@ contract VotingSystem is Ownable, ReentrancyGuard {
     function updateVoter(
         string memory _rwandanId,
         string memory _fullName,
-        string memory _gender
+        string memory _gender,
+        string memory _village
     ) external onlyOwner {
         require(votersByID[_rwandanId].isRegistered, "Voter not found");
         require(bytes(_fullName).length > 0, "Full name cannot be empty");
+        require(bytes(_village).length > 0, "Village cannot be empty");
         require(
             keccak256(abi.encodePacked(_gender)) == keccak256(abi.encodePacked("Male")) ||
             keccak256(abi.encodePacked(_gender)) == keccak256(abi.encodePacked("Female")),
@@ -268,6 +321,7 @@ contract VotingSystem is Ownable, ReentrancyGuard {
 
         votersByID[_rwandanId].fullName = _fullName;
         votersByID[_rwandanId].gender = _gender;
+        votersByID[_rwandanId].village = _village;
     }
 
     // Remove voter (only owner)
@@ -290,8 +344,24 @@ contract VotingSystem is Ownable, ReentrancyGuard {
     function getVotingStatus() external view returns (
         bool isActive,
         uint256 totalCandidates,
-        uint256 totalVotesCast
+        uint256 totalVotesCast,
+        uint256 deadline,
+        bool deadlinePassed
     ) {
-        return (votingActive, candidatesCount, totalVotes);
+        return (
+            votingActive, 
+            candidatesCount, 
+            totalVotes, 
+            votingDeadline,
+            block.timestamp >= votingDeadline
+        );
+    }
+    
+    // Get time remaining until deadline
+    function getTimeRemaining() external view returns (uint256) {
+        if (votingDeadline == 0 || block.timestamp >= votingDeadline) {
+            return 0;
+        }
+        return votingDeadline - block.timestamp;
     }
 }
