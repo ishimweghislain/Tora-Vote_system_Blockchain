@@ -1,56 +1,73 @@
-// Test script to verify the Rwanda voting system
-console.log('🇷🇼 Rwanda Voting System Test');
-console.log('==============================');
+// Simple test script to verify the voting system
+console.log('🚀 Testing Rwanda Voting System...\n');
 
-// Test admin credentials
-const testAdminCredentials = () => {
-  console.log('\n✅ Admin Login Test:');
-  console.log('Username: admin');
-  console.log('Password: 123');
-  console.log('Expected: Login successful');
-};
+// Test 1: Check if backend is running
+async function testBackend() {
+  try {
+    const response = await fetch('http://localhost:5000/api/health');
+    const data = await response.json();
+    console.log('✅ Backend is running:', data.status);
+    return true;
+  } catch (error) {
+    console.log('❌ Backend is not running. Please start it with: cd backend && npm run dev');
+    return false;
+  }
+}
 
-// Test voter registration
-const testVoterRegistration = () => {
-  console.log('\n✅ Voter Registration Test:');
-  console.log('Valid IDs:');
-  console.log('- 1234567890123456 (John Doe)');
-  console.log('- 2345678901234567 (Jane Smith)');
-  console.log('Invalid IDs will show error message');
-};
+// Test 2: Check if voters are seeded
+async function testVoters() {
+  try {
+    const response = await fetch('http://localhost:5000/api/voters');
+    const voters = await response.json();
+    console.log('✅ Voters found:', voters.length);
+    if (voters.length > 0) {
+      console.log('   Sample voter:', voters[0].fullName);
+    }
+    return true;
+  } catch (error) {
+    console.log('❌ Could not fetch voters:', error.message);
+    return false;
+  }
+}
 
-// Test voting flow
-const testVotingFlow = () => {
-  console.log('\n✅ Voting Flow Test:');
-  console.log('1. Accept rules (Amabwiriza)');
-  console.log('2. Enter registered Rwandan ID');
-  console.log('3. Camera verification (dummy)');
-  console.log('4. Select candidate');
-  console.log('5. Submit vote');
-};
+// Test 3: Check if votes endpoint works
+async function testVotes() {
+  try {
+    const response = await fetch('http://localhost:5000/api/votes/results');
+    const data = await response.json();
+    console.log('✅ Votes endpoint working');
+    console.log('   Total votes:', data.totalVotes);
+    console.log('   Candidates:', data.candidates.length);
+    return true;
+  } catch (error) {
+    console.log('❌ Votes endpoint not working:', error.message);
+    return false;
+  }
+}
 
-// Test deadline
-const testDeadline = () => {
-  console.log('\n✅ Deadline Test:');
-  console.log('Voting ends: 17/08/2025 15:00');
-  console.log('Current leader shown during voting');
-  console.log('Winner announced after deadline');
-};
-
-// Run all tests
-const runTests = () => {
-  testAdminCredentials();
-  testVoterRegistration();
-  testVotingFlow();
-  testDeadline();
+// Run tests
+async function runTests() {
+  console.log('Running system tests...\n');
   
-  console.log('\n🎉 All tests completed!');
-  console.log('\nTo test the system:');
-  console.log('1. Start backend: cd backend && npm run dev');
-  console.log('2. Start frontend: cd frontend && npm run dev');
-  console.log('3. Login as admin (admin/123)');
-  console.log('4. Register voters');
-  console.log('5. Test voting flow');
-};
+  const backendOk = await testBackend();
+  if (!backendOk) {
+    console.log('\n❌ Please start the backend first!');
+    console.log('   Commands:');
+    console.log('   1. cd backend');
+    console.log('   2. npm install');
+    console.log('   3. npm run seed');
+    console.log('   4. npm run dev');
+    return;
+  }
+  
+  await testVoters();
+  await testVotes();
+  
+  console.log('\n🎉 System test completed!');
+  console.log('\nTo start the frontend:');
+  console.log('  1. cd frontend');
+  console.log('  2. npm install');
+  console.log('  3. npm run dev');
+}
 
 runTests(); 

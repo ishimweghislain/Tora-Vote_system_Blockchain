@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Vote,
   CheckCircle,
@@ -27,11 +27,30 @@ const VotingInterface = ({ votingStatus, candidates, onVoteSubmitted }) => {
   const canvasRef = useRef(null);
   const [cameraActive, setCameraActive] = useState(false);
 
-  // Mock registered voters (in real app, this would come from admin/blockchain)
-  const registeredVoters = [
-    { rwandanId: '1234567890123456', fullName: 'John Doe' },
-    { rwandanId: '2345678901234567', fullName: 'Jane Smith' }
-  ];
+  // Real registered voters - will be fetched from backend
+  const [registeredVoters, setRegisteredVoters] = useState([]);
+
+  // Fetch registered voters from backend
+  useEffect(() => {
+    const fetchVoters = async () => {
+      try {
+        const response = await fetch('/api/voters');
+        if (response.ok) {
+          const voters = await response.json();
+          setRegisteredVoters(voters);
+        } else {
+          console.error('Failed to fetch voters:', response.status);
+          // Set empty array to avoid errors
+          setRegisteredVoters([]);
+        }
+      } catch (error) {
+        console.error('Error fetching voters:', error);
+        // Set empty array to avoid errors
+        setRegisteredVoters([]);
+      }
+    };
+    fetchVoters();
+  }, []);
 
   const validateRwandanId = (id) => {
     return /^\d{16}$/.test(id);
@@ -53,11 +72,20 @@ const VotingInterface = ({ votingStatus, candidates, onVoteSubmitted }) => {
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         setCameraActive(true);
+        // Auto-take photo after 2 seconds for demo
+        setTimeout(() => {
+          if (cameraActive) {
+            takePhoto();
+          }
+        }, 2000);
       }
     } catch (error) {
       toast.error('Camera access denied or not available');
       // Simulate camera for demo
       setCameraActive(true);
+      setTimeout(() => {
+        takePhoto();
+      }, 2000);
     }
   };
 
@@ -131,12 +159,29 @@ const VotingInterface = ({ votingStatus, candidates, onVoteSubmitted }) => {
 
     setIsVoting(true);
     try {
-      // Simulate vote submission
+      // Submit vote to backend
+      const response = await fetch('/api/votes/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          rwandanId: rwandanId,
+          candidateId: selectedCandidate.id
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to submit vote');
+      }
+
+      const result = await response.json();
       toast.success('Itora ryawe ryoherejwe neza!');
       onVoteSubmitted?.();
       setCurrentStep('confirmation');
     } catch (error) {
-      toast.error('Ntibyashoboye gutora. Ongera ugerageze.');
+      toast.error(error.message || 'Ntibyashoboye gutora. Ongera ugerageze.');
     } finally {
       setIsVoting(false);
     }

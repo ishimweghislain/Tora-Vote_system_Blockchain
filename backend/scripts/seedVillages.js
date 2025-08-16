@@ -1,83 +1,129 @@
 const mongoose = require('mongoose');
 const Village = require('../models/Village');
-require('dotenv').config();
 
-// Sample Rwandan villages data
+// Connect to MongoDB
+mongoose.connect('mongodb://localhost:27017/rwanda_voting', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
+
 const villages = [
-  // Kigali Province
-  { name: 'Kigali City', district: 'Kigali City', province: 'Kigali', code: 'KG001' },
-  { name: 'Gasabo', district: 'Gasabo', province: 'Kigali', code: 'KG002' },
-  { name: 'Kicukiro', district: 'Kicukiro', province: 'Kigali', code: 'KG003' },
-  { name: 'Nyarugenge', district: 'Nyarugenge', province: 'Kigali', code: 'KG004' },
-  
-  // Northern Province
-  { name: 'Musanze', district: 'Musanze', province: 'Northern', code: 'NP001' },
-  { name: 'Burera', district: 'Burera', province: 'Northern', code: 'NP002' },
-  { name: 'Gicumbi', district: 'Gicumbi', province: 'Northern', code: 'NP003' },
-  { name: 'Rulindo', district: 'Rulindo', province: 'Northern', code: 'NP004' },
-  { name: 'Gakenke', district: 'Gakenke', province: 'Northern', code: 'NP005' },
-  
-  // Southern Province
-  { name: 'Huye', district: 'Huye', province: 'Southern', code: 'SP001' },
-  { name: 'Muhanga', district: 'Muhanga', province: 'Southern', code: 'SP002' },
-  { name: 'Kamonyi', district: 'Kamonyi', province: 'Southern', code: 'SP003' },
-  { name: 'Karongi', district: 'Karongi', province: 'Southern', code: 'SP004' },
-  { name: 'Rutsiro', district: 'Rutsiro', province: 'Southern', code: 'SP005' },
-  { name: 'Rubavu', district: 'Rubavu', province: 'Southern', code: 'SP006' },
-  { name: 'Nyamasheke', district: 'Nyamasheke', province: 'Southern', code: 'SP007' },
-  { name: 'Rusizi', district: 'Rusizi', province: 'Southern', code: 'SP008' },
-  { name: 'Nyamagabe', district: 'Nyamagabe', province: 'Southern', code: 'SP009' },
-  { name: 'Nyanza', district: 'Nyanza', province: 'Southern', code: 'SP010' },
-  { name: 'Gisagara', district: 'Gisagara', province: 'Southern', code: 'SP011' },
-  { name: 'Nyaruguru', district: 'Nyaruguru', province: 'Southern', code: 'SP012' },
-  
-  // Eastern Province
-  { name: 'Rwamagana', district: 'Rwamagana', province: 'Eastern', code: 'EP001' },
-  { name: 'Kayonza', district: 'Kayonza', province: 'Eastern', code: 'EP002' },
-  { name: 'Kirehe', district: 'Kirehe', province: 'Eastern', code: 'EP003' },
-  { name: 'Ngoma', district: 'Ngoma', province: 'Eastern', code: 'EP004' },
-  { name: 'Bugesera', district: 'Bugesera', province: 'Eastern', code: 'EP005' },
-  { name: 'Gatsibo', district: 'Gatsibo', province: 'Eastern', code: 'EP006' },
-  { name: 'Nyagatare', district: 'Nyagatare', province: 'Eastern', code: 'EP007' },
-  
-  // Western Province
-  { name: 'Rubavu', district: 'Rubavu', province: 'Western', code: 'WP001' },
-  { name: 'Nyabihu', district: 'Nyabihu', province: 'Western', code: 'WP002' },
-  { name: 'Ngororero', district: 'Ngororero', province: 'Western', code: 'WP003' },
-  { name: 'Karongi', district: 'Karongi', province: 'Western', code: 'WP004' },
-  { name: 'Rutsiro', district: 'Rutsiro', province: 'Western', code: 'WP005' }
+  {
+    name: 'Kigali City',
+    district: 'Kigali',
+    province: 'Kigali',
+    code: 'KG001'
+  },
+  {
+    name: 'Butare',
+    district: 'Huye',
+    province: 'Southern',
+    code: 'BT001'
+  },
+  {
+    name: 'Gisenyi',
+    district: 'Rubavu',
+    province: 'Western',
+    code: 'GS001'
+  },
+  {
+    name: 'Kibuye',
+    district: 'Karongi',
+    province: 'Western',
+    code: 'KB001'
+  },
+  {
+    name: 'Ruhengeri',
+    district: 'Musanze',
+    province: 'Northern',
+    code: 'RH001'
+  },
+  {
+    name: 'Kibungo',
+    district: 'Ngoma',
+    province: 'Eastern',
+    code: 'KB002'
+  },
+  {
+    name: 'Byumba',
+    district: 'Gicumbi',
+    province: 'Northern',
+    code: 'BY001'
+  },
+  {
+    name: 'Cyangugu',
+    district: 'Rusizi',
+    province: 'Western',
+    code: 'CY001'
+  },
+  {
+    name: 'Nyanza',
+    district: 'Nyanza',
+    province: 'Southern',
+    code: 'NY001'
+  },
+  {
+    name: 'Ruhango',
+    district: 'Muhanga',
+    province: 'Southern',
+    code: 'RH002'
+  }
 ];
 
-async function seedVillages() {
+const seedVillages = async () => {
   try {
-    // Connect to MongoDB
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/rwanda_voting', {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    
-    console.log('Connected to MongoDB');
-    
     // Clear existing villages
     await Village.deleteMany({});
-    console.log('Cleared existing villages');
     
     // Insert new villages
-    const insertedVillages = await Village.insertMany(villages);
-    console.log(`Successfully seeded ${insertedVillages.length} villages`);
+    const createdVillages = await Village.insertMany(villages);
+    console.log('Villages seeded successfully:', createdVillages.length);
     
-    // Display some sample villages
-    console.log('\nSample villages:');
-    insertedVillages.slice(0, 5).forEach(village => {
-      console.log(`- ${village.name}, ${village.district}, ${village.province}`);
-    });
+    // Create some real voters
+    const Voter = require('../models/Voter');
+    await Voter.deleteMany({});
     
-    console.log('\nVillage seeding completed successfully!');
-    process.exit(0);
+    const realVoters = [
+      {
+        rwandanId: '1234567890123456',
+        fullName: 'MUKAMUSONI Marie',
+        gender: 'Female',
+        village: createdVillages[0]._id
+      },
+      {
+        rwandanId: '2345678901234567',
+        fullName: 'HABIMANA Jean',
+        gender: 'Male',
+        village: createdVillages[1]._id
+      },
+      {
+        rwandanId: '3456789012345678',
+        fullName: 'UWIMANA Alice',
+        gender: 'Female',
+        village: createdVillages[2]._id
+      },
+      {
+        rwandanId: '4567890123456789',
+        fullName: 'NDAYISABA Pierre',
+        gender: 'Male',
+        village: createdVillages[3]._id
+      },
+      {
+        rwandanId: '5678901234567890',
+        fullName: 'MUKANZABIGWI Claudine',
+        gender: 'Female',
+        village: createdVillages[4]._id
+      }
+    ];
+    
+    const createdVoters = await Voter.insertMany(realVoters);
+    console.log('Voters seeded successfully:', createdVoters.length);
+    
+    mongoose.connection.close();
   } catch (error) {
-    console.error('Error seeding villages:', error);
-    process.exit(1);
+    console.error('Error seeding data:', error);
+    mongoose.connection.close();
   }
-}
+};
 
 seedVillages(); 

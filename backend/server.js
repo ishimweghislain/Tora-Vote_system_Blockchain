@@ -36,6 +36,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/rwanda_vo
 // Routes
 app.use('/api/voters', require('./routes/voters'));
 app.use('/api/villages', require('./routes/villages'));
+app.use('/api/votes', require('./routes/votes'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

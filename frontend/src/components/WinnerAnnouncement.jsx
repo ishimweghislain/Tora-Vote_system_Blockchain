@@ -1,41 +1,84 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Star, TrendingUp, Users, Award, Flag } from 'lucide-react';
+import { Trophy, Star, TrendingUp, Users, Award, Flag, Clock, AlertCircle } from 'lucide-react';
 import { t } from '../utils/translations';
 
 function WinnerAnnouncement({ candidates, votingStatus }) {
   const [winner, setWinner] = useState(null);
   const [finalResults, setFinalResults] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deadlineReached, setDeadlineReached] = useState(false);
 
   useEffect(() => {
-    // Simulate fetching final results from blockchain
-    setTimeout(() => {
-      const results = candidates.map(c => ({
-        ...c,
-        voteCount: Math.floor(Math.random() * 200) + 100,
-        percentage: 0
-      }));
-      
-      // Calculate percentages
-      const totalVotes = results.reduce((sum, c) => sum + c.voteCount, 0);
-      results.forEach(c => {
-        c.percentage = ((c.voteCount / totalVotes) * 100).toFixed(1);
-      });
-      
-      // Sort by vote count
-      results.sort((a, b) => b.voteCount - a.voteCount);
-      
-      setFinalResults(results);
-      setWinner(results[0]);
+    // Check if deadline has reached (17/08/2025 15:00)
+    const deadline = new Date('2025-08-17T15:00:00');
+    const now = new Date();
+    const hasReached = now >= deadline;
+    setDeadlineReached(hasReached);
+
+    if (hasReached) {
+      // Simulate fetching final results from blockchain
+      setTimeout(() => {
+        const results = candidates.map(c => ({
+          ...c,
+          voteCount: c.voteCount || 0,
+          percentage: 0
+        }));
+        
+        // Calculate percentages
+        const totalVotes = results.reduce((sum, c) => sum + c.voteCount, 0);
+        results.forEach(c => {
+          c.percentage = totalVotes > 0 ? ((c.voteCount / totalVotes) * 100).toFixed(1) : 0;
+        });
+        
+        // Sort by vote count
+        results.sort((a, b) => b.voteCount - a.voteCount);
+        
+        setFinalResults(results);
+        setWinner(totalVotes > 0 ? results[0] : null);
+        setLoading(false);
+      }, 2000);
+    } else {
       setLoading(false);
-    }, 2000);
+    }
   }, [candidates]);
 
   if (loading) {
     return (
       <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 text-center">
         <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <p className="text-gray-600">Calculating final results...</p>
+        <p className="text-gray-600">Birakora...</p>
+      </div>
+    );
+  }
+
+  // Show message when deadline hasn't reached
+  if (!deadlineReached) {
+    return (
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 text-center">
+        <div className="w-24 h-24 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
+          <Clock className="h-12 w-12 text-white" />
+        </div>
+        <h1 className="text-4xl font-bold text-yellow-900 mb-4 animate-bounce">
+          🕐 UWATSINZE AZATANGAZWA 🕐
+        </h1>
+        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-xl p-6 mb-6 animate-pulse">
+          <h2 className="text-2xl font-bold text-yellow-800 mb-2">
+            Deadline Yarangije
+          </h2>
+          <p className="text-lg text-yellow-700">
+            Amatora aracyakora. Tegereza ko amatora arangiye kugirango uwatsinze atangazwe.
+          </p>
+          <div className="mt-4 p-4 bg-white rounded-lg">
+            <p className="text-sm text-yellow-800 font-medium">
+              Umunsi wa nyuma wo gutora: 17/08/2025 saa kenda (15:00)
+            </p>
+          </div>
+        </div>
+        <div className="text-center">
+          <p className="text-gray-600 text-lg">
+            Reba ibisubizo by'amatora kuri tab "Ibisubizo" kugirango ubone amatora yatanzwe ubu.
+          </p>
+        </div>
       </div>
     );
   }
@@ -43,7 +86,15 @@ function WinnerAnnouncement({ candidates, votingStatus }) {
   if (!winner) {
     return (
       <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 text-center">
-        <p className="text-gray-600">No winner data available</p>
+        <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <AlertCircle className="h-12 w-12 text-gray-400" />
+        </div>
+        <h2 className="text-2xl font-bold text-gray-700 mb-2">
+          Nta matora yatanzwe
+        </h2>
+        <p className="text-gray-600">
+          Nta matora yatanzwe kugirango habone uwatsinze.
+        </p>
       </div>
     );
   }

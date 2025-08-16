@@ -32,23 +32,29 @@ function ResultsDisplay({ votingStatus, candidates }) {
 
   const fetchBlockchainData = async () => {
     try {
-      // This would be replaced with actual blockchain calls
-      // For now, we'll simulate real-time data updates
-      const updatedCandidates = candidates.map(c => ({
-        ...c,
-        voteCount: Math.floor(Math.random() * 100) + 50 + Math.floor(Math.random() * 20)
-      }));
+      // Fetch real vote data from backend
+      const response = await fetch('/api/votes/results');
+      if (!response.ok) {
+        throw new Error('Failed to fetch vote results');
+      }
       
-      const totalVotes = updatedCandidates.reduce((sum, c) => sum + c.voteCount, 0);
-      const currentLeader = updatedCandidates.reduce((leader, candidate) => 
-        candidate.voteCount > leader.voteCount ? candidate : leader
-      );
+      const data = await response.json();
+      const updatedCandidates = data.candidates;
+      const totalVotes = data.totalVotes;
+      
+      // Only show current leader if there are actual votes
+      let currentLeader = null;
+      if (totalVotes > 0) {
+        currentLeader = updatedCandidates.reduce((leader, candidate) => 
+          candidate.voteCount > leader.voteCount ? candidate : leader
+        );
+      }
       
       setBlockchainData(prev => ({
         ...prev,
         candidates: updatedCandidates,
         totalVotes,
-        isActive: votingStatus?.isActive || false,
+        isActive: true, // Always true since deadline is in the future
         currentLeader
       }));
       
@@ -56,6 +62,7 @@ function ResultsDisplay({ votingStatus, candidates }) {
     } catch (error) {
       console.error('Error fetching blockchain data:', error);
       toast.error('Ntibyashoboye kubona ibisubizo');
+      setLoading(false);
     }
   };
 
@@ -123,8 +130,8 @@ function ResultsDisplay({ votingStatus, candidates }) {
         </div>
       </div>
 
-      {/* Current Leader Highlight - Only show if voting is active */}
-      {blockchainData.isActive && blockchainData.currentLeader && (
+      {/* Current Leader Highlight - Only show if voting is active and there are votes */}
+      {blockchainData.isActive && blockchainData.totalVotes > 0 && blockchainData.currentLeader && (
         <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-2xl p-8">
           <div className="text-center">
             <div className="w-20 h-20 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -153,12 +160,27 @@ function ResultsDisplay({ votingStatus, candidates }) {
         </div>
       )}
 
+      {/* Show message when no votes are cast */}
+      {blockchainData.isActive && blockchainData.totalVotes === 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-8 text-center">
+          <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Users className="h-10 w-10 text-blue-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-blue-800 mb-2">
+            Amajwi Arangana Kano Kanya
+          </h2>
+          <p className="text-lg text-blue-700">
+            Nta matora yatanzwe ubu. Tangira gutora!
+          </p>
+        </div>
+      )}
+
       {/* Statistics Overview */}
       <div className="grid md:grid-cols-3 gap-6">
         <div className="bg-blue-50 p-6 rounded-xl text-center">
           <Users className="h-12 w-12 text-blue-600 mx-auto mb-3" />
           <p className="text-sm text-blue-600 font-medium">Abakandida Bose</p>
-          <p className="text-3xl font-bold text-blue-900">{blockchainData.candidates.length}</p>
+          <p className="text-3xl font-bold text-blue-900">{candidates.length}</p>
         </div>
 
         <div className="bg-green-50 p-6 rounded-xl text-center">
@@ -250,11 +272,17 @@ function ResultsDisplay({ votingStatus, candidates }) {
       </div>
 
       {/* Voting Status */}
-      {!blockchainData.isActive && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-red-900 mb-2">Amatora Yarangiye</h3>
-          <p className="text-red-700">Ibisubizo byanyuma bizaboneka</p>
+      {blockchainData.isActive && (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Clock className="h-8 w-8 text-green-600" />
+          </div>
+          <h3 className="text-xl font-bold text-green-900 mb-2">Amatora Aracyakora</h3>
+          <p className="text-green-700 mb-4">Umunsi wa nyuma wo gutora: 17/08/2025 saa kenda (15:00)</p>
+          <div className="bg-white rounded-lg p-4 inline-block">
+            <p className="text-sm text-green-600 font-medium">Igisigara:</p>
+            <p className="text-2xl font-bold text-green-800">{formatTimeRemaining(timeRemaining)}</p>
+          </div>
         </div>
       )}
     </div>

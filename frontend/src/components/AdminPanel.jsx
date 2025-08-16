@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { Shield, UserPlus, Users, Eye, Search, Edit, Trash2 } from 'lucide-react';
 import { t } from '../utils/translations';
@@ -10,25 +10,72 @@ function AdminPanel({ isAuthenticated, setIsAuthenticated, votingStatus, onStatu
   });
   const [voterForm, setVoterForm] = useState({
     rwandanId: '',
-    fullName: ''
+    fullName: '',
+    gender: 'Male',
+    villageId: ''
   });
   const [voters, setVoters] = useState([]);
+  const [villages, setVillages] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingVoter, setEditingVoter] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   // Hardcoded admin credentials
   const ADMIN_USERNAME = 'admin';
   const ADMIN_PASSWORD = '123';
 
+  // Fetch voters and villages when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchVoters();
+      fetchVillages();
+    }
+  }, [isAuthenticated]);
+
+  const fetchVoters = async () => {
+    try {
+      const response = await fetch('/api/voters');
+      if (response.ok) {
+        const voters = await response.json();
+        setVoters(voters);
+      } else {
+        console.error('Failed to fetch voters:', response.status);
+        toast.error('Ntibyashoboye kubona abatora - Backend not accessible');
+        // Set empty array to avoid errors
+        setVoters([]);
+      }
+    } catch (error) {
+      console.error('Error fetching voters:', error);
+      toast.error('Ntibyashoboye kubona abatora - Check if backend is running');
+      // Set empty array to avoid errors
+      setVoters([]);
+    }
+  };
+
+  const fetchVillages = async () => {
+    try {
+      const response = await fetch('/api/villages');
+      if (response.ok) {
+        const data = await response.json();
+        setVillages(data);
+      } else {
+        console.error('Failed to fetch villages:', response.status);
+        toast.error('Ntibyashoboye kubona imidugudu - Backend not accessible');
+        // Set empty array to avoid errors
+        setVillages([]);
+      }
+    } catch (error) {
+      console.error('Error fetching villages:', error);
+      toast.error('Ntibyashoboye kubona imidugudu - Check if backend is running');
+      // Set empty array to avoid errors
+      setVillages([]);
+    }
+  };
+
   const handleAdminLogin = () => {
     if (adminCredentials.username === ADMIN_USERNAME && adminCredentials.password === ADMIN_PASSWORD) {
       setIsAuthenticated(true);
       toast.success('Winjiye neza mu buyobozi');
-      // Load sample voters for demo
-      setVoters([
-        { id: 1, rwandanId: '1234567890123456', fullName: 'John Doe' },
-        { id: 2, rwandanId: '2345678901234567', fullName: 'Jane Smith' }
-      ]);
     } else {
       toast.error('Izina cyangwa ijambo ry\'ibanga si byo');
     }
@@ -43,7 +90,7 @@ function AdminPanel({ isAuthenticated, setIsAuthenticated, votingStatus, onStatu
   const handleVoterSubmit = async (e) => {
     e.preventDefault();
     
-    if (!voterForm.rwandanId || !voterForm.fullName) {
+    if (!voterForm.rwandanId || !voterForm.fullName || !voterForm.gender || !voterForm.villageId) {
       toast.error('Uzuza amagambo yose');
       return;
     }
@@ -54,60 +101,107 @@ function AdminPanel({ isAuthenticated, setIsAuthenticated, votingStatus, onStatu
       return;
     }
 
+    setLoading(true);
     try {
-      // Check if voter already exists
-      if (voters.find(v => v.rwandanId === voterForm.rwandanId)) {
-        toast.error('Umutora ufite iyi ndangamuntu yanditswe');
-        return;
+      // Save voter to backend database
+      const response = await fetch('/api/voters/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          rwandanId: voterForm.rwandanId,
+          fullName: voterForm.fullName,
+          gender: voterForm.gender,
+          villageId: voterForm.villageId
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to register voter');
       }
 
-      // Add new voter
-      const newVoter = {
-        id: Date.now(),
-        rwandanId: voterForm.rwandanId,
-        fullName: voterForm.fullName
-      };
-      
-      setVoters([...voters, newVoter]);
       toast.success('Umutora yanditswe neza');
-      setVoterForm({ rwandanId: '', fullName: '' });
+      setVoterForm({ rwandanId: '', fullName: '', gender: 'Male', villageId: '' });
+      
+      // Refresh voters list
+      await fetchVoters();
       onStatusChange();
     } catch (error) {
-      toast.error('Ntibyashoboye kwandikisha umutora');
+      toast.error(error.message || 'Ntibyashoboye kwandikisha umutora');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleEditVoter = (voter) => {
     setEditingVoter(voter);
-    setVoterForm({ rwandanId: voter.rwandanId, fullName: voter.fullName });
+    setVoterForm({ 
+      rwandanId: voter.rwandanId, 
+      fullName: voter.fullName,
+      gender: voter.gender || 'Male',
+      villageId: voter.village?._id || ''
+    });
   };
 
-  const handleUpdateVoter = (e) => {
+  const handleUpdateVoter = async (e) => {
     e.preventDefault();
     
-    if (!voterForm.rwandanId || !voterForm.fullName) {
+    if (!voterForm.rwandanId || !voterForm.fullName || !voterForm.gender || !voterForm.villageId) {
       toast.error('Uzuza amagambo yose');
       return;
     }
 
+    setLoading(true);
     try {
-      setVoters(voters.map(v => 
-        v.id === editingVoter.id 
-          ? { ...v, rwandanId: voterForm.rwandanId, fullName: voterForm.fullName }
-          : v
-      ));
+      // Update voter in backend database
+      const response = await fetch(`/api/voters/${editingVoter.rwandanId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fullName: voterForm.fullName,
+          gender: voterForm.gender,
+          villageId: voterForm.villageId
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update voter');
+      }
+
       toast.success('Amakuru y\'umutora avuguruwe neza');
       setEditingVoter(null);
-      setVoterForm({ rwandanId: '', fullName: '' });
+      setVoterForm({ rwandanId: '', fullName: '', gender: 'Male', villageId: '' });
+      
+      // Refresh voters list
+      await fetchVoters();
     } catch (error) {
-      toast.error('Ntibyashoboye kuvugurura umutora');
+      toast.error(error.message || 'Ntibyashoboye kuvugurura umutora');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDeleteVoter = (voterId) => {
+  const handleDeleteVoter = async (voterId) => {
     if (window.confirm('Uzi neza ko ushaka gusiba uyu mutora?')) {
-      setVoters(voters.filter(v => v.id !== voterId));
-      toast.success('Umutora yasibwe neza');
+      try {
+        const response = await fetch(`/api/voters/${voterId}`, {
+          method: 'DELETE'
+        });
+
+        if (response.ok) {
+          toast.success('Umutora yasibwe neza');
+          await fetchVoters();
+        } else {
+          throw new Error('Failed to delete voter');
+        }
+      } catch (error) {
+        toast.error('Ntibyashoboye gusiba umutora');
+      }
     }
   };
 
@@ -248,13 +342,57 @@ function AdminPanel({ isAuthenticated, setIsAuthenticated, votingStatus, onStatu
               required
             />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Ubwoko
+            </label>
+            <select
+              value={voterForm.gender}
+              onChange={(e) => setVoterForm({...voterForm, gender: e.target.value})}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            >
+              <option value="Male">Umugabo</option>
+              <option value="Female">Umugore</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Umudugudu
+            </label>
+            <select
+              value={voterForm.villageId}
+              onChange={(e) => setVoterForm({...voterForm, villageId: e.target.value})}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            >
+              <option value="">Hitamo umudugudu</option>
+              {villages.map((village) => (
+                <option key={village._id} value={village._id}>
+                  {village.name}, {village.district}
+                </option>
+              ))}
+            </select>
+          </div>
           
           <button
             type="submit"
             className="w-full bg-gradient-to-r from-blue-600 to-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2"
+            disabled={loading}
           >
-            <UserPlus className="h-5 w-5" />
-            <span>{editingVoter ? 'Vugurura Umutora' : 'Andikisha Uzatora'}</span>
+            {loading ? (
+              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            ) : (
+              <>
+                <UserPlus className="h-5 w-5" />
+                <span>{editingVoter ? 'Vugurura Umutora' : 'Andikisha Uzatora'}</span>
+              </>
+            )}
           </button>
           
           {editingVoter && (
@@ -262,7 +400,7 @@ function AdminPanel({ isAuthenticated, setIsAuthenticated, votingStatus, onStatu
               type="button"
               onClick={() => {
                 setEditingVoter(null);
-                setVoterForm({ rwandanId: '', fullName: '' });
+                setVoterForm({ rwandanId: '', fullName: '', gender: 'Male', villageId: '' });
               }}
               className="w-full bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors"
             >
@@ -294,14 +432,18 @@ function AdminPanel({ isAuthenticated, setIsAuthenticated, votingStatus, onStatu
               <tr>
                 <th className="px-6 py-3">Indangamuntu</th>
                 <th className="px-6 py-3">Amazina</th>
+                <th className="px-6 py-3">Ubwoko</th>
+                <th className="px-6 py-3">Umudugudu</th>
                 <th className="px-6 py-3">Ibikorwa</th>
               </tr>
             </thead>
             <tbody>
               {filteredVoters.map((voter) => (
-                <tr key={voter.id} className="bg-white border-b hover:bg-gray-50">
+                <tr key={voter._id} className="bg-white border-b hover:bg-gray-50">
                   <td className="px-6 py-4 font-mono">{voter.rwandanId}</td>
                   <td className="px-6 py-4">{voter.fullName}</td>
+                  <td className="px-6 py-4">{voter.gender === 'Male' ? 'Umugabo' : 'Umugore'}</td>
+                  <td className="px-6 py-4">{voter.village?.name || 'N/A'}</td>
                   <td className="px-6 py-4">
                     <div className="flex space-x-2">
                       <button
@@ -311,7 +453,7 @@ function AdminPanel({ isAuthenticated, setIsAuthenticated, votingStatus, onStatu
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => handleDeleteVoter(voter.id)}
+                        onClick={() => handleDeleteVoter(voter.rwandanId)}
                         className="text-red-600 hover:text-red-800"
                       >
                         <Trash2 className="h-4 w-4" />

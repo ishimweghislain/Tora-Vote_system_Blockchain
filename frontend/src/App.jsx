@@ -14,6 +14,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [loading, setLoading] = useState(false);
   const [showDeadlinePopup, setShowDeadlinePopup] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(0);
 
   // Initialize with real candidate data (NO dummy votes - all set to 0)
   useEffect(() => {
@@ -39,12 +40,20 @@ function App() {
     ]);
     
     // Set initial voting status with deadline 17/08/2025 15:00
+    const deadline = new Date('2025-08-17T15:00:00');
     setVotingStatus({ 
       isActive: true, 
       totalCandidates: 3, 
       totalVotesCast: 0,
-      deadline: new Date('2025-08-17T15:00:00')
+      deadline: deadline
     });
+
+    // Update countdown every second
+    const countdownInterval = setInterval(() => {
+      const now = new Date().getTime();
+      const remaining = Math.max(0, deadline.getTime() - now);
+      setTimeRemaining(remaining);
+    }, 1000);
 
     // Show deadline popup every 30 seconds
     const deadlineInterval = setInterval(() => {
@@ -52,15 +61,42 @@ function App() {
       setTimeout(() => setShowDeadlinePopup(false), 5000); // Hide after 5 seconds
     }, 30000);
 
-    return () => clearInterval(deadlineInterval);
+    return () => {
+      clearInterval(deadlineInterval);
+      clearInterval(countdownInterval);
+    };
   }, []);
 
   const handleStatusChange = () => {
     // Refresh data
   };
 
-  const handleVoteSubmitted = () => {
-    // Refresh data after vote
+  const handleVoteSubmitted = async () => {
+    // Fetch updated vote data from backend
+    try {
+      const response = await fetch('/api/votes/results');
+      if (response.ok) {
+        const data = await response.json();
+        setCandidates(data.candidates);
+      }
+    } catch (error) {
+      console.error('Error fetching updated results:', error);
+    }
+  };
+
+  const formatTimeRemaining = (milliseconds) => {
+    if (milliseconds === 0) return '00:00:00';
+    
+    const days = Math.floor(milliseconds / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((milliseconds % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((milliseconds % (1000 * 60)) / 1000);
+    
+    if (days > 0) {
+      return `${days} umunsi, ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+    
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
   const tabs = [
@@ -112,6 +148,18 @@ function App() {
                 <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
                 <span className="text-sm font-medium text-yellow-800">Rwanda 🇷🇼</span>
               </div>
+              
+              {/* Header Deadline Countdown */}
+              <div className="flex items-center space-x-2 bg-red-100 px-3 py-2 rounded-full">
+                <Clock className="h-4 w-4 text-red-600" />
+                <div className="text-right">
+                  <p className="text-xs text-red-600 font-medium">Deadline</p>
+                  <p className="text-sm font-bold text-red-800 font-mono">
+                    {formatTimeRemaining(timeRemaining).split(' ')[0]}
+                  </p>
+                </div>
+              </div>
+              
               {votingStatus?.isActive && (
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
                   <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
@@ -166,13 +214,24 @@ function App() {
                     {t('welcomeSubtitle')}
                   </p>
                   
-                  {/* Animated Deadline Alert */}
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-8 max-w-2xl mx-auto animate-pulse">
-                    <div className="flex items-center justify-center space-x-2 text-yellow-800">
-                      <Clock className="h-5 w-5 animate-bounce" />
-                      <span className="font-semibold">
-                        Umunsi wa nyuma wo gutora: 17/08/2025 saa kenda (15:00)
+                  {/* Prominent Deadline Countdown */}
+                  <div className="bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-200 rounded-xl p-8 mb-8 max-w-3xl mx-auto animate-pulse">
+                    <div className="flex items-center justify-center space-x-3 text-red-800 mb-4">
+                      <Clock className="h-8 w-8 animate-bounce" />
+                      <span className="text-2xl font-bold">
+                        Umunsi wa nyuma wo gutora!
                       </span>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-lg text-red-700 mb-3">
+                        17/08/2025 saa kenda (15:00)
+                      </p>
+                      <div className="bg-white rounded-lg p-4 inline-block shadow-lg">
+                        <p className="text-sm text-red-600 font-medium mb-2">Igisigara:</p>
+                        <p className="text-3xl font-bold text-red-800 font-mono">
+                          {formatTimeRemaining(timeRemaining)}
+                        </p>
+                      </div>
                     </div>
                   </div>
                   
@@ -269,12 +328,12 @@ function App() {
             </div>
             <p className="text-blue-100 mb-2">{t('appDescription')}</p>
             <div className="flex justify-center space-x-6 text-sm text-blue-100">
-              <span>�� {t('aboutFeatures.security')}</span>
+              <span>🔒 {t('aboutFeatures.security')}</span>
               <span>👁️ {t('aboutFeatures.transparency')}</span>
               <span>✅ {t('aboutFeatures.immutable')}</span>
             </div>
             <div className="mt-4 pt-4 border-t border-blue-500 text-xs text-blue-200">
-              <p>© 2024 {t('appName')} - Sisitemu y'Amatora y'u Rwanda</p>
+              <p>© 2025 {t('appName')} - Sisitemu y'Amatora y'u Rwanda</p>
             </div>
           </div>
         </div>

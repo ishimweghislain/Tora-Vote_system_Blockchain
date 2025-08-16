@@ -115,6 +115,48 @@ router.patch('/:rwandanId/eligibility', async (req, res) => {
   }
 });
 
+// Update voter information
+router.patch('/:rwandanId', async (req, res) => {
+  try {
+    const { fullName, gender, villageId } = req.body;
+    
+    // Validate required fields
+    if (!fullName || !gender || !villageId) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+    
+    // Validate gender
+    if (!['Male', 'Female'].includes(gender)) {
+      return res.status(400).json({ error: 'Gender must be Male or Female' });
+    }
+    
+    // Check if village exists
+    const village = await Village.findById(villageId);
+    if (!village) {
+      return res.status(400).json({ error: 'Invalid village selected' });
+    }
+    
+    // Update voter
+    const voter = await Voter.findOneAndUpdate(
+      { rwandanId: req.params.rwandanId },
+      { fullName, gender, village: villageId },
+      { new: true }
+    ).populate('village');
+    
+    if (!voter) {
+      return res.status(404).json({ error: 'Voter not found' });
+    }
+    
+    res.json({
+      message: 'Voter updated successfully',
+      voter
+    });
+  } catch (error) {
+    console.error('Voter update error:', error);
+    res.status(500).json({ error: 'Failed to update voter' });
+  }
+});
+
 // Delete voter
 router.delete('/:rwandanId', async (req, res) => {
   try {
