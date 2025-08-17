@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { BarChart3, Trophy, TrendingUp, Users, Clock, AlertCircle, Shield } from 'lucide-react';
+import { t } from '../utils/translations';
 
 function ResultsDisplay({ votingStatus, candidates }) {
   const [blockchainData, setBlockchainData] = useState({
@@ -17,13 +18,16 @@ function ResultsDisplay({ votingStatus, candidates }) {
   useEffect(() => {
     const deadline = new Date('2025-08-17T15:00:00');
     setBlockchainData(prev => ({ ...prev, deadline }));
-    
+
+    // Fetch initial data
+    fetchBlockchainData();
+
     // Update every 30 seconds for real-time results
     const interval = setInterval(fetchBlockchainData, 30000);
-    
+
     // Update countdown every second
     const countdownInterval = setInterval(updateCountdown, 1000);
-    
+
     return () => {
       clearInterval(interval);
       clearInterval(countdownInterval);
@@ -61,7 +65,7 @@ function ResultsDisplay({ votingStatus, candidates }) {
       setLoading(false);
     } catch (error) {
       console.error('Error fetching blockchain data:', error);
-      toast.error('Ntibyashoboye kubona ibisubizo');
+      toast.error(t('error.cantFindResults'));
       setLoading(false);
     }
   };
@@ -124,7 +128,7 @@ function ResultsDisplay({ votingStatus, candidates }) {
               </span>
             </div>
             <div className="mt-2 text-sm text-yellow-700">
-              Igisigara: {formatTimeRemaining(timeRemaining)}
+              Igihe gisigaye: {formatTimeRemaining(timeRemaining)}
             </div>
           </div>
         </div>
@@ -280,7 +284,7 @@ function ResultsDisplay({ votingStatus, candidates }) {
           <h3 className="text-xl font-bold text-green-900 mb-2">Amatora Aracyakora</h3>
           <p className="text-green-700 mb-4">Umunsi wa nyuma wo gutora: 17/08/2025 saa kenda (15:00)</p>
           <div className="bg-white rounded-lg p-4 inline-block">
-            <p className="text-sm text-green-600 font-medium">Igisigara:</p>
+            <p className="text-sm text-green-600 font-medium">Igihe gisigaye:</p>
             <p className="text-2xl font-bold text-green-800">{formatTimeRemaining(timeRemaining)}</p>
           </div>
         </div>

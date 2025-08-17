@@ -1,27 +1,31 @@
 // Kinyarwanda translations for Tora Voting System
 export const translations = {
-  // Navigation and General
-  appName: "Tora",
-  appDescription: "Sisitemu y'Amatora y'Umutekano",
-  home: "Ahabanza",
-  about: "Ibyerekeye",
-  admin: "Ubuyobozi",
-  vote: "Tora",
-  results: "Ibisubizo",
-  
-  // Homepage
-  welcomeTitle: "Murakaza neza kuri Tora",
-  welcomeSubtitle: "Sisitemu y'amatora ifatika, isobanura kandi idashobora guhindurwa yubatswe ku blockchain",
-  aboutTitle: "Ibyerekeye Tora",
-  aboutDescription: "Tora ni sisitemu y'amatora igezweho ikoresha tekinoroji ya blockchain kugirango itange amatora y'umutekano, asobanura kandi adashobora guhindurwa. Buri itora rikorerwa ku blockchain, bituma bidashobora guhindurwa kandi bishobora kugenzurwa n'abantu bose.",
-  aboutFeatures: {
-    security: "Umutekano",
-    securityDesc: "Amatora yawe aracungwa n'uburyo bw'umutekano bukomeye",
-    transparency: "Ubunyangamugayo",
-    transparencyDesc: "Ibisubizo byose bishobora kubonwa n'abantu bose mu gihe nyacyo",
-    immutable: "Bidashobora guhindurwa",
-    immutableDesc: "Amakuru y'amatora ntashobora guhindurwa nyuma y'uko yanditswe"
-  },
+    // Navigation and General
+    appName: "Tora - Sisitemu y'Amatora y'u Rwanda",
+    appDescription: "Sisitemu y'Amatora y'Umutekano n'Ubunyangamugayo",
+    home: "Ahabanza",
+    about: "Ibyerekeye",
+    admin: "Umuyobozi",
+    vote: "Tora",
+    results: "Ibisubizo",
+    winner: "Uwatsinze",
+    guide: "Ubuyobozi",
+    candidates: "Abakandida",
+    language: "Ururimi",
+
+    // Homepage
+    welcomeTitle: "Murakaza neza kuri Tora",
+    welcomeSubtitle: "Sisitemu y'amatora ifatika, isobanura kandi idashobora guhindurwa yubatswe ku blockchain",
+    aboutTitle: "Ibyerekeye Tora",
+    aboutDescription: "Tora ni sisitemu y'amatora igezweho ikoresha tekinoroji ya blockchain kugirango itange amatora y'umutekano, asobanura kandi adashobora guhindurwa. Buri itora rikorerwa ku blockchain, bituma bidashobora guhindurwa kandi bishobora kugenzurwa n'abantu bose.",
+    aboutFeatures: {
+      security: "Umutekano",
+      securityDesc: "Amatora yawe aracungwa n'uburyo bw'umutekano bukomeye",
+      transparency: "Ubunyangamugayo",
+      transparencyDesc: "Ibisubizo byose bishobora kubonwa n'abantu bose mu gihe nyacyo",
+      immutable: "Bidashobora guhindurwa",
+      immutableDesc: "Amakuru y'amatora ntashobora guhindurwa nyuma y'uko yanditswe"
+    },
   
   // Admin Section
   adminLogin: "Kwinjira mu buyobozi",
@@ -88,13 +92,16 @@ export const translations = {
   },
   
   error: {
-    invalidCredentials: "Amazina y'ukoresha cyangwa ijambo ry'ibanga si byo",
+    invalidCredentials: "Izina cyangwa ijambo ry'ibanga si byo",
     voterNotFound: "Umutora ntabwo abonetse",
     alreadyVoted: "Waratoje",
     votingNotActive: "Amatora ntabwo arakora",
     invalidId: "Indangamuntu si nziza",
-    networkError: "Ikibazo cy'umuyoboro",
-    generalError: "Habaye ikibazo"
+    networkError: "Ikibazo cy'umuyoboro - Reba niba backend ikora",
+    generalError: "Habaye ikibazo",
+    cantFindVillages: "Ntibyashoboye kubona imidugudu - Reba niba backend ikora",
+    cantFindVoters: "Ntibyashoboye kubona abatora - Reba niba backend ikora",
+    cantFindResults: "Ntibyashoboye kubona ibisubizo - Reba niba backend ikora"
   },
   
   // Form Labels

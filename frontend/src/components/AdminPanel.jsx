@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
-import { Shield, UserPlus, Users, Eye, Search, Edit, Trash2 } from 'lucide-react';
+import { Shield, UserPlus, Users, Eye, Search, Edit, Trash2, LogOut, MapPin, User, CreditCard, Info } from 'lucide-react';
 import { t } from '../utils/translations';
 
 function AdminPanel({ isAuthenticated, setIsAuthenticated, votingStatus, onStatusChange }) {
@@ -34,40 +34,44 @@ function AdminPanel({ isAuthenticated, setIsAuthenticated, votingStatus, onStatu
 
   const fetchVoters = async () => {
     try {
+      console.log('🔍 Fetching voters from /api/voters...');
       const response = await fetch('/api/voters');
+      console.log('📡 Response status:', response.status);
+
       if (response.ok) {
         const voters = await response.json();
+        console.log('✅ Voters fetched successfully:', voters.length);
         setVoters(voters);
       } else {
-        console.error('Failed to fetch voters:', response.status);
-        toast.error('Ntibyashoboye kubona abatora - Backend not accessible');
-        // Set empty array to avoid errors
+        console.error('❌ Failed to fetch voters:', response.status, response.statusText);
+        toast.error(t('error.cantFindVoters'));
         setVoters([]);
       }
     } catch (error) {
-      console.error('Error fetching voters:', error);
-      toast.error('Ntibyashoboye kubona abatora - Check if backend is running');
-      // Set empty array to avoid errors
+      console.error('❌ Error fetching voters:', error);
+      toast.error(t('error.cantFindVoters'));
       setVoters([]);
     }
   };
 
   const fetchVillages = async () => {
     try {
+      console.log('🔍 Fetching villages from /api/villages...');
       const response = await fetch('/api/villages');
+      console.log('📡 Response status:', response.status);
+
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ Villages fetched successfully:', data.length);
         setVillages(data);
       } else {
-        console.error('Failed to fetch villages:', response.status);
-        toast.error('Ntibyashoboye kubona imidugudu - Backend not accessible');
-        // Set empty array to avoid errors
+        console.error('❌ Failed to fetch villages:', response.status, response.statusText);
+        toast.error(t('error.cantFindVillages'));
         setVillages([]);
       }
     } catch (error) {
-      console.error('Error fetching villages:', error);
-      toast.error('Ntibyashoboye kubona imidugudu - Check if backend is running');
-      // Set empty array to avoid errors
+      console.error('❌ Error fetching villages:', error);
+      toast.error(t('error.cantFindVillages'));
       setVillages([]);
     }
   };
@@ -306,68 +310,81 @@ function AdminPanel({ isAuthenticated, setIsAuthenticated, votingStatus, onStatu
       </div>
 
       {/* Voter Registration Form */}
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
-        <div className="text-center mb-6">
-          <h3 className="text-xl font-bold text-gray-900">Kwandikisha Uzatora</h3>
-          <p className="text-gray-600">Injiza amakuru y'uzatora</p>
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 md:p-8">
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <UserPlus className="h-8 w-8 text-white" />
+          </div>
+          <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
+            {editingVoter ? 'Guhindura Amakuru y\'Uzatora' : 'Kwandikisha Uzatora'}
+          </h3>
+          <p className="text-gray-600">Injiza amakuru y'uzatora neza</p>
         </div>
 
-        <form onSubmit={editingVoter ? handleUpdateVoter : handleVoterSubmit} className="max-w-md mx-auto space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Indangamuntu y'u Rwanda
-            </label>
-            <input
-              type="text"
-              placeholder="1234567890123456"
-              value={voterForm.rwandanId}
-              onChange={(e) => setVoterForm({...voterForm, rwandanId: e.target.value})}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              maxLength="16"
-              required
-            />
-            <p className="text-xs text-gray-500 mt-1">Injiza imibare 16</p>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Amazina yose
-            </label>
-            <input
-              type="text"
-              placeholder="Amazina yose"
-              value={voterForm.fullName}
-              onChange={(e) => setVoterForm({...voterForm, fullName: e.target.value})}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
-            />
-          </div>
+        <form onSubmit={editingVoter ? handleUpdateVoter : handleVoterSubmit} className="max-w-2xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <CreditCard className="h-4 w-4 inline mr-2 text-purple-600" />
+                Indangamuntu y'u Rwanda
+              </label>
+              <input
+                type="text"
+                placeholder="1234567890123456"
+                value={voterForm.rwandanId}
+                onChange={(e) => setVoterForm({...voterForm, rwandanId: e.target.value})}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-gray-50 focus:bg-white"
+                maxLength="16"
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1 flex items-center">
+                <Info className="h-3 w-3 mr-1" />
+                Injiza imibare 16 y'indangamuntu
+              </p>
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Ubwoko
-            </label>
-            <select
-              value={voterForm.gender}
-              onChange={(e) => setVoterForm({...voterForm, gender: e.target.value})}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
-            >
-              <option value="Male">Umugabo</option>
-              <option value="Female">Umugore</option>
-            </select>
-          </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <User className="h-4 w-4 inline mr-2 text-purple-600" />
+                Amazina yose
+              </label>
+              <input
+                type="text"
+                placeholder="Injiza amazina yose"
+                value={voterForm.fullName}
+                onChange={(e) => setVoterForm({...voterForm, fullName: e.target.value})}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-gray-50 focus:bg-white"
+                required
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Umudugudu
-            </label>
-            <select
-              value={voterForm.villageId}
-              onChange={(e) => setVoterForm({...voterForm, villageId: e.target.value})}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
-            >
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <Users className="h-4 w-4 inline mr-2 text-purple-600" />
+                Ubwoko
+              </label>
+              <select
+                value={voterForm.gender}
+                onChange={(e) => setVoterForm({...voterForm, gender: e.target.value})}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-gray-50 focus:bg-white"
+                required
+              >
+                <option value="Male">👨 Umugabo</option>
+                <option value="Female">👩 Umugore</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <MapPin className="h-4 w-4 inline mr-2 text-purple-600" />
+                Umudugudu
+              </label>
+              <select
+                value={voterForm.villageId}
+                onChange={(e) => setVoterForm({...voterForm, villageId: e.target.value})}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-gray-50 focus:bg-white"
+                required
+              >
               <option value="">Hitamo umudugudu</option>
               {villages.map((village) => (
                 <option key={village._id} value={village._id}>
@@ -375,86 +392,110 @@ function AdminPanel({ isAuthenticated, setIsAuthenticated, votingStatus, onStatu
                 </option>
               ))}
             </select>
+            </div>
           </div>
-          
-          <button
-            type="submit"
-            className="w-full bg-gradient-to-r from-blue-600 to-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2"
-            disabled={loading}
-          >
-            {loading ? (
-              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-            ) : (
-              <>
-                <UserPlus className="h-5 w-5" />
-                <span>{editingVoter ? 'Vugurura Umutora' : 'Andikisha Uzatora'}</span>
-              </>
-            )}
-          </button>
-          
-          {editingVoter && (
+
+          <div className="flex flex-col sm:flex-row gap-4 mt-8">
             <button
-              type="button"
-              onClick={() => {
-                setEditingVoter(null);
-                setVoterForm({ rwandanId: '', fullName: '', gender: 'Male', villageId: '' });
-              }}
-              className="w-full bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors"
+              type="submit"
+              className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white py-4 px-6 rounded-xl font-semibold hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2"
+              disabled={loading}
             >
-              Cancel
+              {loading ? (
+                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : (
+                <>
+                  <UserPlus className="h-5 w-5" />
+                  <span>{editingVoter ? 'Vugurura Amakuru' : 'Andikisha Uzatora'}</span>
+                </>
+              )}
             </button>
-          )}
+          
+            {editingVoter && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingVoter(null);
+                  setVoterForm({ rwandanId: '', fullName: '', gender: 'Male', villageId: '' });
+                }}
+                className="flex-1 bg-gradient-to-r from-gray-500 to-gray-600 text-white py-4 px-6 rounded-xl font-semibold hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2"
+              >
+                <Edit className="h-5 w-5" />
+                <span>Hagarika</span>
+              </button>
+            )}
+          </div>
         </form>
       </div>
 
       {/* Voters Table with Search */}
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-gray-900">Abatora Banditswe</h3>
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 md:p-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+              <Users className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                Abatora Banditswe
+              </h3>
+              <p className="text-gray-600 text-sm">Urutonde rw'abatora bose</p>
+            </div>
+          </div>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
               placeholder="Shakisha abatora..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-gray-50 focus:bg-white w-full md:w-80"
             />
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left text-gray-500">
-            <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+        <div className="overflow-x-auto rounded-xl border border-gray-200">
+          <table className="w-full text-sm text-left">
+            <thead className="text-xs font-semibold text-gray-700 uppercase bg-gradient-to-r from-gray-50 to-gray-100">
               <tr>
-                <th className="px-6 py-3">Indangamuntu</th>
-                <th className="px-6 py-3">Amazina</th>
-                <th className="px-6 py-3">Ubwoko</th>
-                <th className="px-6 py-3">Umudugudu</th>
-                <th className="px-6 py-3">Ibikorwa</th>
+                <th className="px-6 py-4 text-purple-700">📋 Indangamuntu</th>
+                <th className="px-6 py-4 text-purple-700">👤 Amazina</th>
+                <th className="px-6 py-4 text-purple-700">⚧ Ubwoko</th>
+                <th className="px-6 py-4 text-purple-700">🏘 Umudugudu</th>
+                <th className="px-6 py-4 text-purple-700">⚙ Ibikorwa</th>
               </tr>
             </thead>
-            <tbody>
-              {filteredVoters.map((voter) => (
-                <tr key={voter._id} className="bg-white border-b hover:bg-gray-50">
-                  <td className="px-6 py-4 font-mono">{voter.rwandanId}</td>
-                  <td className="px-6 py-4">{voter.fullName}</td>
-                  <td className="px-6 py-4">{voter.gender === 'Male' ? 'Umugabo' : 'Umugore'}</td>
-                  <td className="px-6 py-4">{voter.village?.name || 'N/A'}</td>
+            <tbody className="bg-white">
+              {filteredVoters.map((voter, index) => (
+                <tr key={voter._id} className={`border-b border-gray-100 hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 transition-all duration-200 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+                  <td className="px-6 py-4 font-mono text-gray-800 font-semibold">{voter.rwandanId}</td>
+                  <td className="px-6 py-4 font-medium text-gray-900">{voter.fullName}</td>
+                  <td className="px-6 py-4">
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${voter.gender === 'Male' ? 'bg-blue-100 text-blue-800' : 'bg-pink-100 text-pink-800'}`}>
+                      {voter.gender === 'Male' ? '👨 Umugabo' : '👩 Umugore'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
+                      🏘 {voter.village?.name || 'N/A'}
+                    </span>
+                  </td>
                   <td className="px-6 py-4">
                     <div className="flex space-x-2">
                       <button
                         onClick={() => handleEditVoter(voter)}
-                        className="text-blue-600 hover:text-blue-800"
+                        className="bg-blue-100 text-blue-600 hover:bg-blue-200 hover:text-blue-800 p-2 rounded-lg transition-all duration-200 transform hover:scale-110"
+                        title="Hindura"
                       >
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteVoter(voter.rwandanId)}
-                        className="text-red-600 hover:text-red-800"
+                        className="bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-800 p-2 rounded-lg transition-all duration-200 transform hover:scale-110"
+                        title="Siba"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -466,9 +507,16 @@ function AdminPanel({ isAuthenticated, setIsAuthenticated, votingStatus, onStatu
           </table>
           
           {filteredVoters.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-              <p>{searchTerm ? 'Nta mutora abonetse' : 'Nta batora bahari'}</p>
+            <div className="text-center py-12 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl">
+              <div className="w-20 h-20 bg-gradient-to-r from-gray-300 to-gray-400 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Users className="h-10 w-10 text-white" />
+              </div>
+              <h4 className="text-lg font-semibold text-gray-700 mb-2">
+                {searchTerm ? 'Nta mutora abonetse' : 'Nta batora bahari'}
+              </h4>
+              <p className="text-gray-500 text-sm">
+                {searchTerm ? 'Gerageza gushakisha izindi nyandiko' : 'Tangira wandikishe abatora'}
+              </p>
             </div>
           )}
         </div>
