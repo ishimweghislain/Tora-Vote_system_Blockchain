@@ -74,15 +74,46 @@ const seedVillages = async () => {
   try {
     // Clear existing villages
     await Village.deleteMany({});
-    
+
     // Insert new villages
     const createdVillages = await Village.insertMany(villages);
-    console.log('Villages seeded successfully:', createdVillages.length);
-    
+    console.log('✅ Villages seeded successfully:', createdVillages.length);
+
+    // Create candidates
+    const Candidate = require('../models/Candidate');
+    await Candidate.deleteMany({});
+
+    const candidates = [
+      {
+        candidateId: 1,
+        name: 'KAGAME PAUL',
+        imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+        party: 'RPF-Inkotanyi',
+        description: 'Perezida w\'u Rwanda'
+      },
+      {
+        candidateId: 2,
+        name: 'ANDY ISHIMWE',
+        imageUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+        party: 'Independent',
+        description: 'Umukandida w\'amatora'
+      },
+      {
+        candidateId: 3,
+        name: 'ISHIMWE GHISLAIN',
+        imageUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
+        party: 'Independent',
+        description: 'Umukandida w\'amatora'
+      }
+    ];
+
+    const createdCandidates = await Candidate.insertMany(candidates);
+    console.log('✅ Candidates seeded successfully:', createdCandidates.length);
+
     // Create some real voters
     const Voter = require('../models/Voter');
     await Voter.deleteMany({});
-    
+
     const realVoters = [
       {
         rwandanId: '1234567890123456',
@@ -113,17 +144,40 @@ const seedVillages = async () => {
         fullName: 'MUKANZABIGWI Claudine',
         gender: 'Female',
         village: createdVillages[4]._id
+      },
+      {
+        rwandanId: '6789012345678901',
+        fullName: 'NZEYIMANA Emmanuel',
+        gender: 'Male',
+        village: createdVillages[5]._id
+      },
+      {
+        rwandanId: '7890123456789012',
+        fullName: 'UWIMANA Vestine',
+        gender: 'Female',
+        village: createdVillages[6]._id
+      },
+      {
+        rwandanId: '8901234567890123',
+        fullName: 'BIZIMANA Patrick',
+        gender: 'Male',
+        village: createdVillages[7]._id
       }
     ];
-    
+
     const createdVoters = await Voter.insertMany(realVoters);
-    console.log('Voters seeded successfully:', createdVoters.length);
-    
+    console.log('✅ Voters seeded successfully:', createdVoters.length);
+
     mongoose.connection.close();
   } catch (error) {
-    console.error('Error seeding data:', error);
+    console.error('❌ Error seeding data:', error);
     mongoose.connection.close();
   }
 };
 
-seedVillages(); 
+// Only run if this file is executed directly
+if (require.main === module) {
+  seedVillages();
+}
+
+module.exports = seedVillages;

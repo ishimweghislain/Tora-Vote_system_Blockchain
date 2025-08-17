@@ -10,7 +10,7 @@ const app = express();
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:5173'], // React dev servers
+  origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174'], // React dev servers
   credentials: true
 }));
 
@@ -30,13 +30,35 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/rwanda_vo
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-.then(() => console.log('Connected to MongoDB'))
-.catch(err => console.error('MongoDB connection error:', err));
+.then(async () => {
+  console.log('✅ Connected to MongoDB');
+
+  // Seed database if empty
+  const Village = require('./models/Village');
+  const villageCount = await Village.countDocuments();
+  if (villageCount === 0) {
+    console.log('🌱 Seeding database with initial data...');
+    // Run seed script
+    const { exec } = require('child_process');
+    exec('node scripts/seedVillages.js', (error, stdout, stderr) => {
+      if (error) {
+        console.error('Seed error:', error);
+      } else {
+        console.log('✅ Database seeded successfully');
+      }
+    });
+  }
+})
+.catch(err => {
+  console.error('❌ MongoDB connection error:', err.message);
+  console.log('Please make sure MongoDB is running on your system');
+});
 
 // Routes
 app.use('/api/voters', require('./routes/voters'));
 app.use('/api/villages', require('./routes/villages'));
 app.use('/api/votes', require('./routes/votes'));
+app.use('/api/candidates', require('./routes/candidates'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
