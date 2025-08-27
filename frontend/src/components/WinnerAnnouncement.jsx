@@ -10,7 +10,7 @@ function WinnerAnnouncement({ candidates, votingStatus }) {
 
   useEffect(() => {
     // Check if deadline has reached (17/08/2025 15:00)
-    const deadline = new Date('2025-08-17T15:00:00');
+    const deadline = new Date('2025-08-27T12:20:00');
     const now = new Date();
     const hasReached = now >= deadline;
     setDeadlineReached(hasReached);
@@ -70,7 +70,7 @@ function WinnerAnnouncement({ candidates, votingStatus }) {
           </p>
           <div className="mt-4 p-4 bg-white rounded-lg">
             <p className="text-sm text-yellow-800 font-medium">
-              Umunsi wa nyuma wo gutora: 17/08/2025 saa kenda (15:00)
+              Umunsi wa nyuma wo gutora: 27/08/2025 saa sita na makumyabiri (12:20)
             </p>
           </div>
         </div>
